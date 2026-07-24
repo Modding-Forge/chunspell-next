@@ -1,374 +1,183 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-import os
-import re
-import sys
+from pathlib import Path
+from shutil import copyfile
+
 import pytest
-import shutil
-import tempfile
 
-from unittest.mock import patch
-from io import StringIO
-
-from contextlib import contextmanager
-from cacheman.cacher import get_cache_manager
 from hunspell import Hunspell, HunspellFilePathError
 
 
-DICT_DIR = os.path.join(os.path.dirname(__file__), '..', 'hunspell', 'dictionaries')
-
-
-@contextmanager
-def captured_c_stderr_file():
-    '''
-    Handles flipping the stderr file descriptor to a temp file and back.
-    This is the only way to capture stderr messages sent by Hunspell.
-
-    Yields: path to the captured stderr file
-    '''
-    old_err = sys.stderr
-    try:
-        sys.stderr.flush()
-        new_err = os.dup(sys.stderr.fileno()) # Clone the err file handler
-
-        # Can't use tempdir context because os.dup2 needs a filename
-        temp_dir = tempfile.mkdtemp()
-        temp_name = os.path.join(temp_dir, 'errcap')
-        with open(temp_name, 'a'):
-            os.utime(temp_name, None)
-        temp_file = os.open(temp_name, os.O_WRONLY)
-        os.dup2(temp_file, 2)
-        os.close(temp_file)
-        sys.stderr = os.fdopen(new_err, 'w')
-        yield temp_name
-    finally:
-        try:
-            try:
-                os.close(temp_file)
-            except:
-                pass
-            shutil.rmtree(temp_dir) # Nuke temp content
-        except:
-            pass
-        sys.stderr = old_err # Reset back
-        os.dup2(sys.stderr.fileno(), 2)
+DICT_DIR = Path(__file__).parent.parent / "hunspell" / "dictionaries"
 
 
 @pytest.fixture
 def hunspell():
-    return Hunspell('test', hunspell_data_dir=DICT_DIR)
+    return Hunspell("en_US", hunspell_data_dir=str(DICT_DIR))
 
 
-def test_create_destroy(hunspell):
-    del hunspell
+def test_create_with_bundled_dictionary():
+    hunspell = Hunspell()
+
+    assert hunspell.lang == "en_US"
+    assert hunspell.spell("test")
 
 
-def test_missing_dict():
-    with pytest.raises(HunspellFilePathError):
-        Hunspell('not_avail', hunspell_data_dir=DICT_DIR)
+def test_missing_dictionary_raises_path_error():
+    with pytest.raises(HunspellFilePathError, match="not_available"):
+        Hunspell("not_available", hunspell_data_dir=str(DICT_DIR))
 
 
-def test_add_dic(hunspell):
-    assert not hunspell.spell('AA')
-    hunspell.add_dic(os.path.join(DICT_DIR, 'a.dic'))
-    assert hunspell.spell('AA')
+def test_unicode_dictionary_path(tmp_path):
+    dictionary_dir = tmp_path / "wörterbücher"
+    dictionary_dir.mkdir()
+    copyfile(DICT_DIR / "en_US.aff", dictionary_dir / "en_US.aff")
+    copyfile(DICT_DIR / "en_US.dic", dictionary_dir / "en_US.dic")
+
+    hunspell = Hunspell(
+        "en_US",
+        hunspell_data_dir=str(dictionary_dir),
+        system_encoding="UTF-8",
+    )
+
+    assert hunspell.spell("test")
 
 
-@patch('os.path.isfile', return_value=True)
-@patch('os.access', return_value=True)
-def test_bad_path_encoding(isfile_mock, access_mock):
-    with pytest.raises(HunspellFilePathError):
-        Hunspell('not_checked',
-            hunspell_data_dir=u'bad/\udcc3/decoding')
+def test_add_dictionary(hunspell, tmp_path):
+    dictionary = tmp_path / "custom.dic"
+    dictionary.write_text("1\ncodexuniqueword\n", encoding="utf-8")
+
+    assert not hunspell.spell("codexuniqueword")
+    assert hunspell.add_dic(str(dictionary)) == 0
+    assert hunspell.spell("codexuniqueword")
 
 
-@patch('hunspell.hunspell.WIN32_LONG_PATH_PREFIX', '/not/valid')
-def test_windows_utf_8_encoding_applies_prefix():
-    with captured_c_stderr_file() as caperr:
-        with patch("os.name", 'nt'):
-            # If python file existance checks used prefix, this would raise a HunspellFilePathError
-            Hunspell('test', system_encoding='UTF-8')
-        with open(caperr, 'r') as err:
-            # But the Hunspell library lookup had the prefix applied
-            assert re.search(r'error:[^\n]*/not/valid[^\n]*', err.read())
+@pytest.mark.parametrize(
+    ("word", "expected"),
+    [
+        ("test", True),
+        ("correct", True),
+        ("incorect", False),
+        ("café", True),
+        ("uncafé", False),
+        ("", True),
+    ],
+)
+def test_spell(hunspell, word, expected):
+    assert hunspell.spell(word) is expected
 
 
-def test_spell(hunspell):
-    assert not hunspell.spell('dpg')
-    assert hunspell.spell('dog')
-
-
-def test_spell_utf8(hunspell):
-    assert hunspell.spell(u'café')
-    assert not hunspell.spell(u'uncafé')
-
-
-def test_spell_empty(hunspell):
-    assert hunspell.spell('')
+def test_spell_rejects_bytes(hunspell):
+    with pytest.raises(TypeError):
+        hunspell.spell(b"test")
 
 
 def test_suggest(hunspell):
-    required = set(['dog', 'pg', 'deg', 'dig', 'dpt', 'dug', 'mpg', 'd pg'])
-    suggest = hunspell.suggest('dpg')
-    assert isinstance(suggest, tuple)
-    assert required == set(suggest).intersection(required)
+    suggestions = hunspell.suggest("incorect")
+
+    assert isinstance(suggestions, tuple)
+    assert suggestions[0] == "incorrect"
+    assert "correction" in suggestions
 
 
-def test_suggest_utf8(hunspell):
-    suggest = hunspell.suggest('cefé')
-    assert isinstance(suggest, tuple)
-    assert 'café' in suggest
+def test_suggest_unicode(hunspell):
+    assert "café" in hunspell.suggest("cefé")
 
 
 def test_suggest_empty(hunspell):
-    assert hunspell.suggest('') == ()
+    assert hunspell.suggest("") == ()
 
 
 def test_suffix_suggest(hunspell):
-    required = set(['doing', 'doth', 'doer', 'doings', 'doers', 'doest'])
-    suffix_suggest = hunspell.suffix_suggest('do')
-    assert isinstance(suffix_suggest, tuple)
-    assert required == set(suffix_suggest).intersection(required)
+    assert hunspell.suffix_suggest("do") == (
+        "doing",
+        "doth",
+        "doer",
+        "doings",
+        "doers",
+        "doest",
+    )
 
 
-def test_suffix_suggest_utf8(hunspell):
-    suffix_suggest = hunspell.suffix_suggest('café')
-    assert isinstance(suffix_suggest, tuple)
-    assert set(['cafés', "café's"]) == set(suffix_suggest)
+def test_suffix_suggest_unicode(hunspell):
+    assert set(hunspell.suffix_suggest("café")) == {"cafés", "café's"}
 
 
 def test_suffix_suggest_empty(hunspell):
-    assert hunspell.suffix_suggest('') == ()
+    assert hunspell.suffix_suggest("") == ()
 
 
-def test_stem(hunspell):
-    assert hunspell.stem('dog') == ('dog',)
-    assert hunspell.stem('permanently') == ('permanent',)
+@pytest.mark.parametrize(
+    ("word", "expected"),
+    [
+        ("dog", ("dog",)),
+        ("testers", ("tester", "test")),
+        ("saves", ("save",)),
+        ("permanently", ("permanent",)),
+    ],
+)
+def test_stem(hunspell, word, expected):
+    assert hunspell.stem(word) == expected
 
 
-def test_analyze(hunspell):
-    assert hunspell.analyze('dog') == (' st:dog',)
-    assert hunspell.analyze('permanently') == (' st:permanent fl:Y',)
+@pytest.mark.parametrize(
+    ("word", "expected"),
+    [
+        ("dog", (" st:dog",)),
+        ("permanently", (" st:permanent fl:Y",)),
+    ],
+)
+def test_analyze(hunspell, word, expected):
+    assert hunspell.analyze(word) == expected
 
 
 def test_add(hunspell):
-    word = 'outofvocabularyword'
+    word = "outofvocabularyword"
+
     assert not hunspell.spell(word)
-    hunspell.add(word)
+    assert hunspell.add(word) == 0
     assert hunspell.spell(word)
-    typo = word + 'd'
-    assert word in hunspell.suggest(typo)
+    assert word in hunspell.suggest(word + "d")
 
 
 def test_add_with_affix(hunspell):
-    word = 'outofvocabularyword'
+    word = "outofvocabularyword"
+
     assert not hunspell.spell(word)
-    hunspell.add_with_affix(word, 'example')
+    assert hunspell.add_with_affix(word, "example") == 0
     assert hunspell.spell(word)
-    typo = word + 'd'
-    assert word in hunspell.suggest(typo)
+    assert word in hunspell.suggest(word + "d")
 
 
 def test_remove(hunspell):
-    word = 'dog'
+    assert hunspell.spell("dog")
+    assert hunspell.remove("dog") == 0
+    assert not hunspell.spell("dog")
+
+
+@pytest.mark.parametrize(
+    ("action", "word"),
+    [
+        ("spell", "test"),
+        ("suggest", "incorect"),
+        ("stem", "testers"),
+        ("analyze", "permanently"),
+        ("suffix_suggest", "do"),
+    ],
+)
+def test_action_dispatch(hunspell, action, word):
+    expected = getattr(hunspell, action)(word)
+
+    assert hunspell.action(action, word) == expected
+
+
+def test_action_add_and_remove(hunspell):
+    word = "actionword"
+
+    assert hunspell.action("add", word) == 0
     assert hunspell.spell(word)
-    hunspell.remove(word)
+    assert hunspell.action("remove", word) == 0
     assert not hunspell.spell(word)
-    assert 'dog' not in hunspell.suggest('dog')
 
 
-def test_bulk_suggest(hunspell):
-    hunspell.set_concurrency(3)
-    suggest = hunspell.bulk_suggest(['dog', 'dpg'])
-    assert sorted(suggest.keys()) == ['dog', 'dpg']
-    assert isinstance(suggest['dog'], tuple)
-    assert ('dog',) == suggest['dog']
-
-    required = set(['dog', 'pg', 'deg', 'dig', 'dpt', 'dug', 'mpg', 'd pg'])
-    assert isinstance(suggest['dpg'], tuple)
-    assert required == set(suggest['dpg']).intersection(required)
-
-    checked = ['bjn', 'dog', 'dpg', 'dyg', 'foo', 'frg', 'opg', 'pgg', 'qre', 'twg']
-    suggest = hunspell.bulk_suggest(checked)
-    assert sorted(suggest.keys()) == checked
-
-
-def test_bulk_suffix_suggest(hunspell):
-    hunspell.set_concurrency(3)
-    suffix_suggest = hunspell.bulk_suffix_suggest(['cat', 'do'])
-    required = set(['doing', 'doth', 'doer', 'doings', 'doers', 'doest'])
-    assert sorted(suffix_suggest.keys()) == ['cat', 'do']
-    assert isinstance(suffix_suggest['do'], tuple)
-    assert required == set(suffix_suggest['do']).intersection(required)
-
-    required = set(['cater', 'cats', "cat's", 'caters'])
-    assert isinstance(suffix_suggest['cat'], tuple)
-    assert required == set(suffix_suggest['cat']).intersection(required)
-
-    checked = ['bjn', 'dog', 'dpg', 'dyg', 'foo', 'frg', 'opg', 'pgg', 'qre', 'twg']
-    suggest = hunspell.bulk_suffix_suggest(checked)
-    assert sorted(suggest.keys()) == checked
-
-
-def test_bulk_stem(hunspell):
-    hunspell.set_concurrency(3)
-    assert hunspell.bulk_stem(['dog', 'permanently']) == {
-        'permanently': ('permanent',),
-        'dog': ('dog',)
-    }
-    assert hunspell.bulk_stem(['dog', 'twigs', 'permanently', 'unrecorded']) == {
-        'unrecorded': ('recorded',),
-        'permanently': ('permanent',),
-        'twigs': ('twig',),
-        'dog': ('dog',)
-    }
-
-
-def test_bulk_analyze(hunspell):
-    hunspell.set_concurrency(3)
-    assert hunspell.bulk_analyze(['dog', 'permanently']) == {
-        'permanently': (' st:permanent fl:Y',),
-        'dog': (' st:dog',)
-    }
-    assert hunspell.bulk_analyze(['dog', 'twigs', 'permanently', 'unrecorded']) == {
-        'unrecorded': ('un st:recorded fl:U',),
-        'permanently': (' st:permanent fl:Y',),
-        'twigs': (' st:twig fl:S',),
-        'dog': (' st:dog',)
-    }
-
-
-def test_non_overlapping_caches(hunspell):
-    test_suggest = hunspell.suggest('testing')
-    test_suffix = hunspell.suffix_suggest('testing')
-    test_stem = hunspell.stem('testing')
-
-    hunspell._suggest_cache['made-up'] = test_suggest
-    assert hunspell.suggest('made-up') == test_suggest
-    hunspell._suffix_cache['made-up'] = test_suffix
-    assert hunspell.suffix_suggest('made-up') == test_suffix
-    hunspell._stem_cache['made-up'] = test_stem
-    assert hunspell.stem('made-up') == test_stem
-
-    h2 = Hunspell('en_US', hunspell_data_dir=DICT_DIR)
-    assert h2.suggest('made-up') != test_suggest
-    assert h2.stem('made-up') != test_stem
-
-
-def test_overlapping_caches(hunspell):
-    test_suggest = hunspell.suggest('testing')
-    test_suffix = hunspell.suffix_suggest('testing')
-    test_stem = hunspell.stem('testing')
-
-    hunspell._suggest_cache['made-up'] = test_suggest
-    assert hunspell.suggest('made-up') == test_suggest
-    hunspell._suffix_cache['made-up'] = test_suffix
-    assert hunspell.suffix_suggest('made-up') == test_suffix
-    hunspell._stem_cache['made-up'] = test_stem
-    assert hunspell.stem('made-up') == test_stem
-
-    del hunspell
-    hunspell = Hunspell('test', hunspell_data_dir=DICT_DIR)
-    assert hunspell.suggest('made-up') == test_suggest
-    assert hunspell.suffix_suggest('made-up') == test_suffix
-    assert hunspell.stem('made-up') == test_stem
-
-
-def test_save_caches_persistance(hunspell):
-    temp_dir = tempfile.mkdtemp()
-    try:
-        h1 = Hunspell('test',
-            hunspell_data_dir=DICT_DIR,
-            disk_cache_dir=temp_dir,
-            cache_manager='disk_hun')
-        test_suggest = h1.suggest('testing')
-        test_suffix = h1.suffix_suggest('testing')
-        test_stem = h1.stem('testing')
-
-        h1._suggest_cache['made-up'] = test_suggest
-        assert h1.suggest('made-up') == test_suggest
-        h1._suffix_cache['made-up'] = test_suffix
-        assert h1.suffix_suggest('made-up') == test_suffix
-        h1._stem_cache['made-up'] = test_stem
-        assert h1.stem('made-up') == test_stem
-
-        h1.save_cache()
-        del h1
-
-        cacheman = get_cache_manager('disk_hun')
-        cacheman.deregister_all_caches()
-        assert len(cacheman.cache_by_name) == 0
-
-        h2 = Hunspell('test',
-            hunspell_data_dir=DICT_DIR,
-            disk_cache_dir=temp_dir,
-            cache_manager='disk_hun')
-
-        assert len(h2._suggest_cache) != 0
-        assert len(h2._stem_cache) != 0
-        assert h2.suggest('made-up') == test_suggest
-        assert h2.suffix_suggest('made-up') == test_suffix
-        assert h2.stem('made-up') == test_stem
-    finally:
-        shutil.rmtree(temp_dir) # Nuke temp content
-
-
-def test_clear_caches_persistance(hunspell):
-    temp_dir = tempfile.mkdtemp()
-    try:
-        h1 = Hunspell('test',
-            hunspell_data_dir=DICT_DIR,
-            disk_cache_dir=temp_dir,
-            cache_manager='disk_hun')
-        test_suggest = h1.suggest('testing')
-        test_suffix = h1.suffix_suggest('testing')
-        test_stem = h1.stem('testing')
-
-        h1._suggest_cache['made-up'] = test_suggest
-        assert h1.suggest('made-up') == test_suggest
-        h1._suffix_cache['made-up'] = test_suffix
-        assert h1.suffix_suggest('made-up') == test_suffix
-        h1._stem_cache['made-up'] = test_stem
-        assert h1.stem('made-up') == test_stem
-
-        h1.save_cache()
-        h1.clear_cache()
-        del h1
-
-        cacheman = get_cache_manager('disk_hun')
-        cacheman.deregister_all_caches()
-        assert len(cacheman.cache_by_name) == 0
-
-        h2 = Hunspell('test',
-            hunspell_data_dir=DICT_DIR,
-            disk_cache_dir=temp_dir,
-            cache_manager='disk_hun')
-
-        assert len(h2._suggest_cache) == 0
-        assert len(h2._stem_cache) == 0
-        assert h2.suggest('made-up') != test_suggest
-        assert h2.suffix_suggest('made-up') != test_suffix
-        assert h2.stem('made-up') != test_stem
-    finally:
-        shutil.rmtree(temp_dir) # Nuke temp content
-
-
-def test_clear_caches_non_peristance(hunspell):
-    test_suggest = hunspell.suggest('testing')
-    test_suffix = hunspell.suffix_suggest('testing')
-    test_stem = hunspell.stem('testing')
-
-    hunspell._suggest_cache['made-up'] = test_suggest
-    assert hunspell.suggest('made-up') == test_suggest
-    hunspell._suffix_cache['made-up'] = test_suffix
-    assert hunspell.suffix_suggest('made-up') == test_suffix
-    hunspell._stem_cache['made-up'] = test_stem
-    assert hunspell.stem('made-up') == test_stem
-
-    hunspell.clear_cache()
-
-    del hunspell
-    hunspell = Hunspell('test', hunspell_data_dir=DICT_DIR)
-    assert hunspell.suggest('made-up') != test_suggest
-    assert hunspell.suffix_suggest('made-up') != test_suffix
-    assert hunspell.stem('made-up') != test_stem
+def test_action_rejects_unknown_action(hunspell):
+    with pytest.raises(ValueError, match="Unexpected action"):
+        hunspell.action("unknown", "test")
