@@ -1,7 +1,7 @@
 # chunspell-next
 
 **chunspell-next** is a fast Python interface to [Hunspell](https://hunspell.github.io/), implemented as a native Cython/C++ extension.
-This project a fork of [cdhigh/chunspell](https://github.com/cdhigh/chunspell), which is itself a fork of [MSeal/cython_hunspell](https://github.com/MSeal/cython_hunspell). This fork supports current Python versions, provides updated wheels, and uses a modern `uv`-based development and release workflow.
+This project is a fork of [cdhigh/chunspell](https://github.com/cdhigh/chunspell), which is itself a fork of [MSeal/cython_hunspell](https://github.com/MSeal/cython_hunspell). This fork supports current Python versions, provides updated wheels, and uses a modern `uv`-based development and release workflow.
 
 ## Installation
 
@@ -31,13 +31,15 @@ spellchecker.suggest("incorect")  # ("incorrect", "correction", ...)
 
 The wheel includes the `en_US` dictionary. Custom Hunspell dictionaries can be loaded from another directory.
 
-See the [usage and development guide](docs/guide.md) for dictionaries, the full API, Windows path handling, development setup, and build commands.
+## Documentation
+
+- [Usage and development guide](docs/guide.md): API, dictionaries, Windows path handling, development setup, and build commands
+- [Changelog](CHANGELOG.md): release history and notable changes
+- [Release guide](RELEASING.md): versioning, tagging, and publishing
 
 ## Releases
 
 Tagged releases provide wheels for Linux, macOS, and Windows as well as a source distribution.
-
-See [CHANGELOG.md](CHANGELOG.md) for the project history.
 
 ## License
 
