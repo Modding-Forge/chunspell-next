@@ -47,6 +47,7 @@ jobs:
       - name: Build wheels
         run: uv run --no-sync cibuildwheel --output-dir wheelhouse
         env:
+          CIBW_BUILD: "cp3{8,9,10,11,12,13,14}-*"
           CIBW_ARCHS_LINUX: "auto aarch64"
           CIBW_BEFORE_BUILD_LINUX: |
             if [ -f /etc/debian_version ]; then

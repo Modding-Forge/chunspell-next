@@ -35,7 +35,7 @@ dev = [
     "pytest>=8.0",
 ]
 build = [
-    "cibuildwheel>=2.23,<3",
+    "cibuildwheel>=3.2.1,<4; python_version >= '3.11'",
 ]
 
 [tool.setuptools]
