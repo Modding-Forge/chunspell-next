@@ -3,3 +3,4 @@ include LICENSE
 include HUNSPELL_LICENSE_LESSER
 include build_hunspell.py
 include tar_download.py
+recursive-include docs *.md
