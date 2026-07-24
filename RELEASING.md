@@ -2,8 +2,7 @@
 
 ## Track changes
 
-Update `CHANGELOG.md` with all significant release changes and update the
-version in `hunspell/_version.py`.
+Update `CHANGELOG.md` with all significant release changes and update the version in `hunspell/_version.py`.
 
 ## Rebuild the generated extension source
 
@@ -25,8 +24,9 @@ Build the source distribution and a wheel through the PEP 517 backend:
 uv build
 ```
 
-The platform wheel workflow can also be started manually in GitHub Actions.
-It stores all wheels and the source distribution as workflow artifacts.
+Pushing a `v*` tag starts the release workflow. It runs the tests, builds platform wheels and the source distribution, and publishes all artifacts to PyPI and a GitHub Release.
+
+PyPI Trusted Publishing must be configured once for this repository with `.github/workflows/release.yml` as the workflow and `pypi` as the GitHub environment. No PyPI username or password secret is required.
 
 ## Tag the release
 
