@@ -1,72 +1,27 @@
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
 
-# C extensions
-*.so
-
-# Distribution / packaging
-.Python
-env/
+# uv and virtual environments
 .venv/
 .uv-cache/
-bin/
-build/
-develop-eggs/
-dist/
-wheelhouse/
-eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
-*.eggs
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
+# Tests and coverage
+.pytest_cache/
 .coverage
-.cache
-nosetests.xml
+htmlcov/
 coverage.xml
 
-# Translations
-*.mo
-
-# Mr Developer
-.mr.developer.cfg
-.project
-.pydevproject
-
-# Rope
-.ropeproject
-
-# Django stuff:
-*.log
-*.pot
-
-# Sphinx documentation
-docs/_build/
-
-# Downloaded content
-external
-libs/gcc
-libs/unix
-libs/tmp
-
-# Pytest
-.pytest_cache
-
-# Built binary locations
-libs/linux
+# Packaging and native builds
+build/
+dist/
+wheelhouse/
+*.egg-info/
+external/
+libs/gcc/
+libs/unix/
+libs/tmp/
+libs/linux/
 hunspell/libhunspell-1.7.so.0
 hunspell/libhunspell-1.7.0.dylib
 hunspell/libhunspell-msvc14-x64.lib

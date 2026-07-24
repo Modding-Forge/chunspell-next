@@ -1,47 +1,19 @@
-The compiled libraries for Microsoft Visual Studio are included, because they are very difficult to build automatically.
+Bundled Hunspell libraries
+==========================
 
-For other platforms besides windows, Hunspell is dynamically downloaded and built.
+The static Microsoft Visual C++ libraries in ``libs/msvc`` are bundled because
+Windows wheels link Hunspell statically. The corresponding Hunspell licensing
+terms are included in ``HUNSPELL_LICENSE_LESSER``.
 
-The hunspell license is included in HUNSPELL_LICENSE_LESSER for the two compiled binaries -- its compatible with this repositories license.
+Linux and macOS builds download and compile Hunspell 1.7.2 during the native
+extension build.
 
+To replace the Windows libraries, build Hunspell 1.7.2 in Release mode for x64
+and Win32 with the ``/MD`` runtime, then copy the resulting ``libhunspell.lib``
+files to:
 
+* ``libs/msvc/libhunspell-msvc14-x64.lib``
+* ``libs/msvc/libhunspell-msvc14-x86.lib``
 
-Steps to reproduce the msvc files:
-
-
-Install Visual Studios 2019.
-
-Run find_library.py to download windows usuable version of hunspell. This will
-populate the 'external' directory.
-
-With Visual Studio, open 'external\hunspell-1.7.0\msvc\Hunspell.sln'.
-Allow visual studio to upgrade the solution if prompted.
-
-Then right click on libhunspell from the solution explorer and choose 'properties'.
-Change to Release Configuration
-Under 'C/C++ -> All Options' make the following changes:
-* Runtime Library -> DLL Multi-Threaded (/MD)
-
-Then click on Configuration Manager in upper right corner.
-Uncheck 'Build' checkboxes for 'hunspell' and 'testparser' (or delete those options)
-Under 'libhunspell -> platform' select '<New>'
-Change New platform dropdown select 'x64' and click 'Ok'
-
-From top navigation bar, select Release and x64.
-Then from the menu select 'Build -> Build Solution'.
-
-Go to external\hunspell-1.7.0\msvc\x64\Release\' copy 'libhunspell.lib' to
-'chunspell/libs/msvc/libhunspell-msvc14-x64.lib'.
-
-Now for 32 bit build:
-
-From top navigation bar, select Release and Win32. Make sure the configurations changes
-are the same for the Win32 profile. Then from the menu select 'Build -> Build Solution'.
-
-Go to external\hunspell-1.7.0\msvc\Release\libhunspell\' copy 'libhunspell.lib' to
-'chunspell/libs/msvc/libhunspell-msvc14-x86.lib'.
-
-
-You should now have 2 new files:
-libhunspell-msvc14-x86.lib
-libhunspell-msvc14-x64.lib
+When the standard Hunspell Visual Studio output paths are present under
+``external/hunspell-1.7.2``, ``libs/copy_msvc_libs.sh`` performs those copies.
