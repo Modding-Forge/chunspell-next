@@ -62,7 +62,7 @@ wheels = [
 ]
 
 [[package]]
-name = "chunspell"
+name = "chunspell-next"
 source = { editable = "." }
 
 [package.dev-dependencies]

@@ -5,7 +5,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "chunspell"
+name = "chunspell-next"
 dynamic = ["version"]
 description = "A wrapper on Hunspell for use in Python"
 readme = "README.md"
@@ -53,7 +53,6 @@ hunspell = [
     "*.dylib.*",
     "*.lib",
     "*.pxd",
-    "*.pyd",
     "*.pyx",
     "*.so",
     "*.so.*",
