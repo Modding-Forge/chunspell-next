@@ -22,42 +22,36 @@ jobs:
           ref: ${{ github.event.inputs.branch }}
           submodules: true
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.31"
+          python-version: "3.13"
+          enable-cache: true
+
       - name: Set up QEMU on Linux
         if: runner.os == 'Linux'
         uses: docker/setup-qemu-action@v3
         with:
           platforms: all
 
-      #- name: Set up Microsoft VS compiler
-      #  if: runner.os == 'Windows'
-      #  uses: ilammy/msvc-dev-cmd@v1
-        
       - name: Set up dependencies on macOS
         if: runner.os == 'macOS'
         run: |
           brew update
-          brew install autoconf automake gettext pkg-config libtool hunspell python
+          brew install autoconf automake gettext pkg-config libtool hunspell
 
-      - name: Install Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
+      - name: Install build tools
+        run: uv sync --locked --only-group build --no-install-project
 
       - name: Build wheels
-        run: |
-          python -m pip install --upgrade pip
-          #setuptools<72.2.0 for bug: https://github.com/pypa/distutils/issues/283
-          pip install --upgrade setuptools<72.2.0 wheel cibuildwheel
-          python -m cibuildwheel --output-dir wheelhouse
+        run: uv run --no-sync cibuildwheel --output-dir wheelhouse
         env:
           CIBW_SKIP: "cp36-* cp37-*" # Skip CPython 3.6 and CPython 3.7
           #CIBW_ARCHS_MACOS: "x86_64 universal2 arm64"
           CIBW_ARCHS_LINUX: "auto aarch64"
           #CIBW_REPAIR_WHEEL_COMMAND_MACOS: "delocate-wheel --require-archs {delocate_archs} -w {dest_dir}/repaired_wheel -v {dest_dir}/*.whl"
-          CIBW_BEFORE_BUILD_MACOS: "pip install --upgrade setuptools wheel"
-          CIBW_BEFORE_BUILD_WINDOWS: "pip install --upgrade setuptools wheel"
           CIBW_BEFORE_BUILD_LINUX: |
-            pip install --upgrade setuptools<72.2.0 wheel
             if [ -f /etc/debian_version ]; then
               apt update && apt install -y autoconf dh-autoreconf automake autopoint gettext pkg-config libtool libhunspell-dev python3-dev
             elif [ -f /etc/alpine-release ]; then
@@ -69,7 +63,7 @@ jobs:
               exit 1
             fi
 
-      - name: Upload Wheels
+      - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
           name: python-package-distributions-${{ matrix.os }}
@@ -129,21 +123,20 @@ jobs:
           ref: ${{ github.event.inputs.branch }}
           submodules: true
 
-      - name: Install Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
-          python-version: "3.x"
+          version: "0.11.31"
+          python-version: "3.13"
+          enable-cache: true
 
-      - name: Install build dependencies
+      - name: Install system build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y autoconf automake autopoint gettext pkg-config libtool
 
-      - name: Install build dependencies
-        run: python -m pip install --upgrade setuptools wheel
-
-      - name: Create source tarball
-        run: python setup.py sdist
+      - name: Create source distribution
+        run: uv build --sdist
 
       - name: Store the source distribution
         uses: actions/upload-artifact@v4

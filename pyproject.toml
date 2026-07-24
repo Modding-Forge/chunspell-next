@@ -1,0 +1,62 @@
+[build-system]
+requires = [
+    "setuptools>=70.1,<72.2.0",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chunspell"
+dynamic = ["version"]
+description = "A wrapper on Hunspell for use in Python"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT + MPL 1.1/GPL 2.0/LGPL 2.1" }
+authors = [
+    { name = "cdhigh", email = "akindleear@gmail.com" },
+]
+keywords = ["hunspell", "spelling", "correction"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Topic :: Utilities",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Modding-Forge/chunspell-next"
+Repository = "https://github.com/Modding-Forge/chunspell-next"
+Issues = "https://github.com/Modding-Forge/chunspell-next/issues"
+
+[dependency-groups]
+dev = [
+    "cython>=3.0",
+    "pytest>=8.0",
+]
+build = [
+    "cibuildwheel>=2.23,<3",
+]
+
+[tool.setuptools]
+include-package-data = true
+packages = ["hunspell", "hunspell.dictionaries"]
+zip-safe = false
+
+[tool.setuptools.dynamic]
+version = { attr = "hunspell._version.__version__" }
+
+[tool.setuptools.package-data]
+hunspell = [
+    "*.cpp",
+    "*.dylib",
+    "*.dylib.*",
+    "*.lib",
+    "*.pxd",
+    "*.pyd",
+    "*.pyx",
+    "*.so",
+    "*.so.*",
+    "dictionaries/*.aff",
+    "dictionaries/*.dic",
+]

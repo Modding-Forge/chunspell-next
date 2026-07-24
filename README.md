@@ -18,14 +18,14 @@ on the C++ side of the module interface, which gives optimal performance.
 
 For the simplest install simply run (For Windows/Linux/MacOS):
 ```
-pip install chunspell
+uv add chunspell
 ```
 
 For FreeBSD/AMD64 (`pypi.org` does not accept freebsd wheel):
 ```
 wget https://github.com/cdhigh/chunspell/releases/download/2.0.4/chunspell-2.0.4-freebsd-amd64.zip && \
 unzip -y -d ./chunspell_whl/ chunspell-2.0.4-freebsd-amd64.zip && \
-pip install chunspell --no-index --find-links=./chunspell_whl/. && \
+uv add chunspell --no-index --find-links=./chunspell_whl/. && \
 rm -rf ./chunspell_whl
 ```
 
@@ -153,6 +153,22 @@ Much like adding, you can remove words.
 
 ```python
 h.remove(word)
+```
+
+## Development
+
+Create the project environment, run the test suite, and build distributions with uv:
+
+```shell
+uv sync --group dev
+uv run pytest tests
+uv build
+```
+
+Regenerate the checked-in Cython C++ source after changing `hunspell/hunspell.pyx`:
+
+```shell
+uv run cython -3 --cplus hunspell/hunspell.pyx
 ```
 
 ## Language Preferences

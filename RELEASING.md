@@ -1,36 +1,38 @@
 # Releasing
 
-## Tracking Changes
+## Track changes
 
-Update the CHANGELOG.md with any significant changes for the release.
+Update `CHANGELOG.md` with all significant release changes and update the
+version in `hunspell/_version.py`.
 
-Update VERSION file with the next version bump
+## Rebuild the generated extension source
 
-    git commit -am "Updated version to `cat VERSION`"
+Create the development environment and regenerate the checked-in C++ source:
 
-## Rebuilding Extensions
+```shell
+uv sync --group dev
+uv run cython -3 --cplus hunspell/hunspell.pyx
+uv run pytest tests
+```
 
-Then ensure that you've built the extension for the release.
+Commit the regenerated `hunspell/hunspell.cpp` when it changed.
 
-    python --version # Use >= 3.6.x
-    pip install -r requirements-dev.txt
-    python setup.py build_ext
-    # Remove the any accidentally added so files
-    rm -rf hunspell/*.so
-    pytest # Should pass with changes
+## Build distributions
 
-## Commiting Changes
+Build the source distribution and a wheel through the PEP 517 backend:
 
-You should now see a new hunspell.cpp in the hunspell directory.
+```shell
+uv build
+```
 
-   git add hunspell/hunspell.cpp
-   git commit -m "Compiled new hunspell.cpp for release"
+The platform wheel workflow can also be started manually in GitHub Actions.
+It stores all wheels and the source distribution as workflow artifacts.
 
+## Tag the release
 
-## Push release
+Create and push a tag matching the version in `hunspell/_version.py`:
 
-To release, run through the following:
-
-    rm -rf dist
-    git tag `cat VERSION`
-    git push --tags
+```shell
+git tag v<version>
+git push origin v<version>
+```
