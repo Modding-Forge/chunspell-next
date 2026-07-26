@@ -41,7 +41,7 @@ jobs:
       - name: Build wheels
         run: uv run --no-sync cibuildwheel --output-dir wheelhouse
         env:
-          CIBW_BUILD: "cp3{8,9,10,11,12,13,14}-*"
+          CIBW_BUILD: "cp3{10,11,12,13,14}-*"
           CIBW_ARCHS_LINUX: "auto"
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: >-
             LD_LIBRARY_PATH={project}/hunspell

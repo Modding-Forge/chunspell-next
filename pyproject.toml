@@ -9,7 +9,7 @@ name = "chunspell-next"
 dynamic = ["version"]
 description = "A wrapper on Hunspell for use in Python"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = { text = "MIT + MPL 1.1/GPL 2.0/LGPL 2.1" }
 authors = [
     { name = "cdhigh", email = "akindleear@gmail.com" },

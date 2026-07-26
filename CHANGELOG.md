@@ -2,7 +2,8 @@
 
 - Renamed the distribution to `chunspell-next` while keeping `hunspell` as the import package.
 - Migrated packaging and development tooling to `pyproject.toml` and uv.
-- Added test and wheel coverage for Python 3.13 and 3.14 while retaining wheels for Python 3.8 through 3.12.
+- Added test and wheel coverage for Python 3.13 and 3.14.
+- Dropped support for Python 3.8 and 3.9 because both releases have reached end of life.
 - Reworked GitHub Actions for cross-platform testing, tag-based releases, PyPI Trusted Publishing, and GitHub Releases.
 - Updated the test suite to use the current API and bundled dictionaries.
 - Streamlined the README and moved detailed usage, development, and release documentation into dedicated guides.
