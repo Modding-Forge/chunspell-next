@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "setuptools>=70.1,<72.2.0",
+    "setuptools>=77",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -10,17 +10,27 @@ dynamic = ["version"]
 description = "A wrapper on Hunspell for use in Python"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT + MPL 1.1/GPL 2.0/LGPL 2.1" }
+license = "MIT AND LGPL-2.1-or-later"
+license-files = ["LICENSE", "HUNSPELL_LICENSE_LESSER"]
 authors = [
     { name = "cdhigh", email = "akindleear@gmail.com" },
 ]
 keywords = ["hunspell", "spelling", "correction"]
+maintainers = [
+    { name = "Modding Forge", email = "info@moddingforge.com" },
+]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Topic :: Utilities",
-    "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = []
 
