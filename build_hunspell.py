@@ -40,8 +40,11 @@ def is_windows_arm64():
 def windows_arm64_hunspell_sources():
     if not is_windows_arm64():
         return []
-    source_dir = os.path.join(BASE_DIR, 'external', 'hunspell-1.7.2', 'src', 'hunspell')
-    return [os.path.join(source_dir, filename) for filename in HUNSPELL_SOURCE_FILES]
+    source_dir = os.path.join('external', 'hunspell-1.7.2', 'src', 'hunspell')
+    return [
+        os.path.join(source_dir, filename).replace(os.sep, '/')
+        for filename in HUNSPELL_SOURCE_FILES
+    ]
 
 def include_dirs():
     return [
