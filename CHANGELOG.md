@@ -4,6 +4,7 @@
 - Migrated packaging and development tooling to `pyproject.toml` and uv.
 - Modernized PyPI metadata with SPDX licensing, complete license files, and Modding Forge maintainer information.
 - Added test and wheel coverage for Python 3.13 and 3.14.
+- Added native macOS x86-64 and Windows ARM64 wheels.
 - Dropped support for Python 3.8 and 3.9 because both releases have reached end of life.
 - Reworked GitHub Actions for cross-platform testing, tag-based releases, PyPI Trusted Publishing, and GitHub Releases.
 - Updated the test suite to use the current API and bundled dictionaries.

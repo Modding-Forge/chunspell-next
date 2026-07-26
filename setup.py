@@ -10,7 +10,11 @@ from setuptools.command.build_ext import build_ext
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-from build_hunspell import pkgconfig, repair_darwin_link_dep_path
+from build_hunspell import (
+    pkgconfig,
+    repair_darwin_link_dep_path,
+    windows_arm64_hunspell_sources,
+)
 
 
 class bdist_wheel(_bdist_wheel):
@@ -23,7 +27,7 @@ class bdist_wheel(_bdist_wheel):
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 BUILD_ARGS = defaultdict(lambda: ['-O3', '-g0'])
 for compiler, args in [
-        ('msvc', ['/EHsc', '/MD', '/DHUNSPELL_STATIC']),
+        ('msvc', ['/EHsc', '/MD', '/DHUNSPELL_STATIC', '/D_CRT_SECURE_NO_WARNINGS']),
         ('gcc', ['-O3', '-g0', '-DHUNSPELL_STATIC'])]:
     BUILD_ARGS[compiler] = args
 
@@ -72,7 +76,10 @@ setup(
     ext_modules=[
         Extension(
             'hunspell.hunspell',
-            [os.path.join('hunspell', 'hunspell.cpp')],
+            [
+                os.path.join('hunspell', 'hunspell.cpp'),
+                *windows_arm64_hunspell_sources(),
+            ],
             language='c++',
         )
     ],

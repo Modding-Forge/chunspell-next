@@ -16,6 +16,33 @@ from subprocess import getstatusoutput
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
+HUNSPELL_SOURCE_FILES = (
+    'affentry.cxx',
+    'affixmgr.cxx',
+    'csutil.cxx',
+    'filemgr.cxx',
+    'hashmgr.cxx',
+    'hunspell.cxx',
+    'hunzip.cxx',
+    'phonet.cxx',
+    'replist.cxx',
+    'suggestmgr.cxx',
+)
+
+
+def is_windows_arm64():
+    return (
+        platform.system() == 'Windows'
+        and platform.machine().lower() in ('arm64', 'aarch64')
+    )
+
+
+def windows_arm64_hunspell_sources():
+    if not is_windows_arm64():
+        return []
+    source_dir = os.path.join(BASE_DIR, 'external', 'hunspell-1.7.2', 'src', 'hunspell')
+    return [os.path.join(source_dir, filename) for filename in HUNSPELL_SOURCE_FILES]
+
 def include_dirs():
     return [
         os.path.abspath(os.path.join(BASE_DIR, 'hunspell')),
@@ -103,10 +130,11 @@ def pkgconfig(**kw):
         kw['include_dirs'] = include_dirs()
 
     if platform.system() == 'Windows':
-        # These should be hardcoded to both architectures
-        kw['libraries'] = ['libhunspell-msvc14-x64', 'libhunspell-msvc14-x86']
-        kw['library_dirs'] = [os.path.join(BASE_DIR, 'libs', 'msvc')]
-        kw['extra_link_args'] = ['/NODEFAULTLIB:libucrt.lib ucrt.lib']
+        if not is_windows_arm64():
+            # The linker selects the library matching the current x86 or x64 target.
+            kw['libraries'] = ['libhunspell-msvc14-x64', 'libhunspell-msvc14-x86']
+            kw['library_dirs'] = [os.path.join(BASE_DIR, 'libs', 'msvc')]
+            kw['extra_link_args'] = ['/NODEFAULTLIB:libucrt.lib ucrt.lib']
     else:
         force_build = os.environ.get('CYHUNSPELL_FORCE_BUILD', False)
         if force_build == '0' or force_build == 0:
